@@ -8,9 +8,9 @@ def max_sum_valuations(valuations):
     G = nx.Graph()
 
     # create edge for every player & object
-    for player in range(len(valuations)):
-        for object in range(len(valuations[player])):
-            G.add_edge(f"person {player}", f"room {object}", weight=valuations[player][object])
+    for person in range(len(valuations)):
+        for room in range(len(valuations[person])):
+            G.add_edge(f"person {person}", f"room {room}", weight=valuations[person][room])
 
     # find maximum-value matching -> allocation that maximizes the valuations
     return nx.max_weight_matching(G)
@@ -22,10 +22,8 @@ def find_rent_prices(valuations, rent):
     num_rooms = len(valuations[0])
     num_people = len(valuations)
 
-    # Define price variables for each room
     price_rooms = [cvxpy.Variable() for _ in range(num_rooms)]
 
-    # Constraints list
     constraints = []
 
     # The sum of the prices should be equal to the rent
@@ -44,10 +42,7 @@ def find_rent_prices(valuations, rent):
                     valuations[person_index][room_index] - price_rooms[room_index] >= valuations[person_index][
                         other_room_index] - price_rooms[other_room_index])
 
-    # Define the optimization problem
     prob = cvxpy.Problem(cvxpy.Minimize(0), constraints)
-
-    # Solve the problem
     prob.solve()
 
     # Print the results
@@ -70,6 +65,5 @@ if __name__ == '__main__':
     rent = 90
     allocation = max_sum_valuations(valuations)
     print("Allocation: ", allocation)
-    # prices = find_rent_prices(valuations,rent)
 
     find_rent_prices(valuations, rent)
