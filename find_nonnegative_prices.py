@@ -85,60 +85,11 @@ def assign_rooms_for_unallocated_people(fixed_alloc, valuations):
     return fixed_alloc
 
 
-# Step 2: Determine the prices such that the placement will be envy-free
-def find_rent_with_nonnegative_prices(valuations, rent):
-    """
-    Find the prices such that the allocation will be envy-free and every person pays price >= 0.
-
-    Examples:
-    >>> valuations = [[20, 30, 40], [40, 30, 20], [30, 30, 30]]
-    >>> rent = 90
-    >>> find_rent_with_nonnegative_prices(valuations, rent)
-    Allocation: [('person 0', 'room 2'), ('person 1', 'room 0'), ('person 2', 'room 1')]
-    Room 0 rent: 31.0
-    Room 1 rent: 27.0
-    Room 2 rent: 31.0
-
-    >>> valuations = [[25, 40, 35], [40, 60, 35], [20, 40, 25]]
-    >>> rent = 50
-    >>> find_rent_with_nonnegative_prices(valuations, rent)
-    Allocation: [('person 0', 'room 2'), ('person 1', 'room 1'), ('person 2', 'room 0')]
-    Room 0 rent: 8.0
-    Room 1 rent: 28.0
-    Room 2 rent: 15.0
-
-    >>> valuations = [[20, 30, 40], [40, 30, 20], [30, 40, 20]]
-    >>> rent = 90
-    >>> find_rent_with_nonnegative_prices(valuations, rent)
-    Allocation: [('person 0', 'room 2'), ('person 1', 'room 0'), ('person 2', 'room 1')]
-    Room 0 rent: 30.0
-    Room 1 rent: 31.0
-    Room 2 rent: 29.0
-
-    >>> valuations = [[150,0], [140,10]]
-    >>> rent = 100
-    >>> find_rent_with_nonnegative_prices(valuations, rent)
-    Can not find allocation with prices >= 0
-
-    >>> valuations = [[36, 34, 30, 0], [31, 36, 33, 0], [34, 30, 36, 0], [32, 33, 35, 0]]
-    >>> rent = 100
-    >>> find_rent_with_nonnegative_prices(valuations, rent)
-    Can not find allocation with prices >= 0
-    """
-
-    allocation = max_sum_valuations(valuations)
-    num_rooms = len(valuations[0])
-    num_people = len(valuations)
-
-    price_rooms = [cvxpy.Variable() for _ in range(num_rooms)]
-
-    constraints = []
-
+def get_constraints(valuations, rent, allocation, num_rooms, price_rooms, is_poor_constraints):
     # The sum of the prices should be equal to the rent
-    constraints.append(sum(price_rooms) == rent)
+    constraints = [sum(price_rooms) == rent]
 
     # Prices need to be >= 0
-
     constraints.extend([price >= 0 for price in price_rooms])
 
     # Envy-free constraints for each person
@@ -150,6 +101,66 @@ def find_rent_with_nonnegative_prices(valuations, rent):
                 constraints.append(
                     valuations[person_index][room_index] - price_rooms[room_index] >= valuations[person_index][
                         other_room_index] - price_rooms[other_room_index])
+
+    # if is_poor_constraints:
+    #    # do it here
+
+    return constraints
+
+
+# Step 2: Determine the prices such that the placement will be envy-free
+def find_rent_with_nonnegative_prices(valuations, rent, is_assumption_poors):
+    """
+    Find the prices such that the allocation will be envy-free and every person pays price >= 0.
+
+    Examples:
+    >>> valuations = [[20, 30, 40], [40, 30, 20], [30, 30, 30]]
+    >>> rent = 90
+    >>> is_poor_constraints = False
+    >>> find_rent_with_nonnegative_prices(valuations, rent, is_poor_constraints)
+    Allocation: [('person 0', 'room 2'), ('person 1', 'room 0'), ('person 2', 'room 1')]
+    Room 0 rent: 31.0
+    Room 1 rent: 27.0
+    Room 2 rent: 31.0
+
+    >>> valuations = [[25, 40, 35], [40, 60, 35], [20, 40, 25]]
+    >>> rent = 50
+    >>> is_poor_constraints = False
+    >>> find_rent_with_nonnegative_prices(valuations, rent,is_poor_constraints)
+    Allocation: [('person 0', 'room 2'), ('person 1', 'room 1'), ('person 2', 'room 0')]
+    Room 0 rent: 8.0
+    Room 1 rent: 28.0
+    Room 2 rent: 15.0
+
+    >>> valuations = [[20, 30, 40], [40, 30, 20], [30, 40, 20]]
+    >>> rent = 90
+    >>> is_poor_constraints = False
+    >>> find_rent_with_nonnegative_prices(valuations, rent,is_poor_constraints)
+    Allocation: [('person 0', 'room 2'), ('person 1', 'room 0'), ('person 2', 'room 1')]
+    Room 0 rent: 30.0
+    Room 1 rent: 31.0
+    Room 2 rent: 29.0
+
+    >>> valuations = [[150,0], [140,10]]
+    >>> rent = 100
+    >>> is_poor_constraints = False
+    >>> find_rent_with_nonnegative_prices(valuations, rent,is_poor_constraints)
+    Can not find allocation with prices >= 0
+
+    >>> valuations = [[36, 34, 30, 0], [31, 36, 33, 0], [34, 30, 36, 0], [32, 33, 35, 0]]
+    >>> rent = 100
+    >>> is_poor_constraints = False
+    >>> find_rent_with_nonnegative_prices(valuations, rent,is_poor_constraints)
+    Can not find allocation with prices >= 0
+    """
+
+    allocation = max_sum_valuations(valuations)
+
+    num_rooms = len(valuations[0])
+    num_people = len(valuations)
+    price_rooms = [cvxpy.Variable() for _ in range(num_rooms)]
+
+    constraints = get_constraints(valuations, rent, allocation, num_rooms, price_rooms,is_assumption_poors)
 
     prob = cvxpy.Problem(cvxpy.Minimize(0), constraints)
     # Explicitly specify the solver to use for not showing the red warnings
@@ -168,7 +179,14 @@ def find_rent_with_nonnegative_prices(valuations, rent):
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", message="Your problem is being solved with the ECOS solver by default.",
                             category=FutureWarning)
-
+    #
     import doctest
 
     doctest.testmod()
+    # valuations = [[20, 30, 40], [40, 30, 20], [30, 40, 20]]
+    # rent = 90
+
+    # valuations = [[150, 0], [140, 10]]
+    # rent = 100
+    # is_poor_constraints = True
+    # find_rent_with_nonnegative_prices(valuations, rent, is_poor_constraints)
