@@ -13,6 +13,20 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
 
+
+"""
+Part A:
+To find room allocation without envy we need to do:
+Step 1: find allocation that maximizes the sum of valuations
+Step 2: Determine the prices such that the allocation will be envy-free
+
+Part B:
+The assumption of the poor tenants: every tenant prefers a free room over a paid room
+If this assumption holds then there is a room allocation without envy where each tenant pays a positive price
+
+"""
+
+
 # Step 1: find allocation that maximizes the sum of valuations
 def max_sum_valuations(valuations):
     """
@@ -109,7 +123,7 @@ def get_constraints(valuations, rent, allocation, num_rooms, price_rooms, is_ass
     return constraints
 
 
-# Step 2: Determine the prices such that the placement will be envy-free
+# Step 2: Determine the prices such that the allocation will be envy-free
 def find_rent_with_nonnegative_prices(valuations, rent, is_assumption_poor_tenants):
     """
     Find the prices such that the allocation will be envy-free and every person pays price >= 0.
